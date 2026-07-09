@@ -18,6 +18,7 @@ Gen2 devices (`Gen2WaterControl`, `Gen2IrrigationControl`, `Gen2Mower`, ...)
 do have a different schedule format that this module does not (yet) support.
 """
 
+import base64
 from dataclasses import dataclass
 from enum import IntEnum, IntFlag
 
@@ -80,6 +81,20 @@ class Gen1ScheduleEntry:
             action=data[6],
         )
 
+    def to_bytes(self) -> bytes:
+        return (
+            bytes(
+                [
+                    self.schedule_id,
+                    int(self.weekdays),
+                    self.start_hour,
+                    self.start_minute,
+                ]
+            )
+            + self.duration_minutes.to_bytes(2, byteorder="little")
+            + bytes([self.action])
+        )
+
 
 def parse_gen1_schedule_config(config: bytes) -> list[Gen1ScheduleEntry]:
     """Parse a Gen1 `schedule_config` byte blob into individual schedule entries."""
@@ -91,6 +106,16 @@ def parse_gen1_schedule_config(config: bytes) -> list[Gen1ScheduleEntry]:
         Gen1ScheduleEntry.from_bytes(config[i : i + SCHEDULE_ENTRY_SIZE])
         for i in range(0, len(config), SCHEDULE_ENTRY_SIZE)
     ]
+
+
+def build_gen1_schedule_config(entries: list[Gen1ScheduleEntry]) -> bytes:
+    """Encode schedule entries into a Gen1 `schedule_config` byte blob."""
+    return b"".join(entry.to_bytes() for entry in entries)
+
+
+def gen1_schedule_config_to_base64(entries: list[Gen1ScheduleEntry]) -> str:
+    """Encode schedule entries into the base64 string used in the gateway JSON."""
+    return base64.b64encode(build_gen1_schedule_config(entries)).decode()
 
 
 @dataclass
@@ -163,3 +188,13 @@ def parse_gen1_sun_schedule_config(config: bytes) -> list[Gen1SunScheduleEntry]:
         Gen1SunScheduleEntry.from_bytes(config[i : i + SUN_SCHEDULE_ENTRY_SIZE])
         for i in range(0, len(config), SUN_SCHEDULE_ENTRY_SIZE)
     ]
+
+
+def build_gen1_sun_schedule_config(entries: list[Gen1SunScheduleEntry]) -> bytes:
+    """Encode sun schedule entries into a Gen1 `sun_schedule_config` byte blob."""
+    return b"".join(entry.to_bytes() for entry in entries)
+
+
+def gen1_sun_schedule_config_to_base64(entries: list[Gen1SunScheduleEntry]) -> str:
+    """Encode sun schedule entries into the base64 string used in the gateway JSON."""
+    return base64.b64encode(build_gen1_sun_schedule_config(entries)).decode()
