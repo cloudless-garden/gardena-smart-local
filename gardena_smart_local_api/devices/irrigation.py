@@ -15,7 +15,7 @@ from .gen1 import (
     Gen1IdentifyMixin,
     _Gen1DeviceProtocol,
 )
-from .gen2 import Gen2BatteryMixin, Gen2Device, Gen2TemperatureMixin
+from .gen2 import Gen2BatteryMixin, Gen2Device, Gen2IdentifyMixin, Gen2TemperatureMixin
 
 # Used to indicate that the action was initiated through WebSocket API.
 COMMAND_SOURCE = "18"
@@ -278,7 +278,7 @@ class Gen1IrrigationControl(
         return self.build_command_obj(self.get_command("close_all_valves"))
 
 
-class _Gen2Irrigation(Gen2Device):
+class _Gen2Irrigation(Gen2IdentifyMixin, Gen2Device):
     @property
     def valve_count(self) -> int:
         return len(self.valve_ids)
