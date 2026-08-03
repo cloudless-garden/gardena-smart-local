@@ -6,6 +6,7 @@ from typing import ClassVar, Protocol
 
 from pydantic import Field
 
+from ..messages import EgressMessageList
 from ..model_loader import Gen2ModelDefinition
 from ..resources import VALUE_TYPES, IpsoPath
 from .device import Device
@@ -15,6 +16,10 @@ class _DeviceProtocol(Protocol):
     """Used to satisfy the type checker."""
 
     def get_value(self, path: IpsoPath) -> VALUE_TYPES | None: ...
+
+    def build_execute_obj(
+        self, path: IpsoPath, value: VALUE_TYPES | None
+    ) -> EgressMessageList: ...
 
 
 class Gen2BatteryMixin:
@@ -52,6 +57,18 @@ class Gen2TemperatureMixin:
             )
         )
         return value if isinstance(value, float) else None
+
+
+class Gen2IdentifyMixin:
+    def build_identify_obj(self: _DeviceProtocol) -> EgressMessageList:
+        return self.build_execute_obj(
+            IpsoPath(
+                object_name="sg_common",
+                object_instance_id="0",
+                resource_name="identify",
+            ),
+            None,
+        )
 
 
 class Gen2Device(Device):
