@@ -7,6 +7,8 @@ import pytest
 from gardena_smart_local_api.devices import create_devices_from_messages
 from gardena_smart_local_api.devices.gen1 import Gen1BatteryMixin
 from gardena_smart_local_api.devices.sensors import Sensor1
+from gardena_smart_local_api.messages import Entity, Event
+from gardena_smart_local_api.resources import IpsoPath
 
 
 @pytest.mark.asyncio
@@ -50,10 +52,64 @@ async def test_sensor1_temperature(sensor1):
 
 
 @pytest.mark.asyncio
+async def test_sensor1_soil_moisture(sensor1):
+    moisture = sensor1.soil_moisture
+    assert moisture is not None
+    assert isinstance(moisture, int)
+
+
+@pytest.mark.asyncio
 async def test_sensor1_light(sensor1):
     light = sensor1.light
     assert light is not None
     assert isinstance(light, int)
+
+
+def _delete_event(device_id: str, resource_path: str) -> Event:
+    return Event(
+        entity=Entity(path=IpsoPath.model_validate(resource_path), device=device_id),
+        op="delete",
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("attribute", "resource_name"),
+    [
+        ("temperature", "ambient_temperature"),
+        ("soil_moisture", "soil_humidity"),
+        ("light", "light"),
+    ],
+)
+async def test_sensor1_returns_none_when_resource_missing(
+    sensor1, attribute, resource_name
+):
+    sensor1.update_data(_delete_event(sensor1.id, f"lemonbeat/0/{resource_name}"))
+    assert getattr(sensor1, attribute) is None
+
+
+@pytest.mark.asyncio
+async def test_sensor1_build_refresh_soil_moisture_obj(sensor1):
+    request = sensor1.build_refresh_soil_moisture_obj().root[0]
+    assert request.op == "write"
+    assert request.entity.path.resource_name == "command"
+    assert request.payload == {"vi": sensor1.get_command("measure_soil_moisture")}
+
+
+@pytest.mark.asyncio
+async def test_sensor1_build_refresh_temperature_obj(sensor1):
+    request = sensor1.build_refresh_temperature_obj().root[0]
+    assert request.op == "write"
+    assert request.entity.path.resource_name == "command"
+    assert request.payload == {"vi": sensor1.get_command("measure_ambient_temperature")}
+
+
+@pytest.mark.asyncio
+async def test_sensor1_build_refresh_light_obj(sensor1):
+    request = sensor1.build_refresh_light_obj().root[0]
+    assert request.op == "write"
+    assert request.entity.path.resource_name == "command"
+    assert request.payload == {"vi": sensor1.get_command("measure_light")}
 
 
 @pytest.mark.asyncio
