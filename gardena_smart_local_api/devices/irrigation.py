@@ -202,7 +202,7 @@ class _Gen1Irrigation(Gen1Device, ABC):
             raise ValueError(f"Invalid valve ID {valve_id}")
         value = self.get_watering_timer(valve_id)
         if value is not None:
-            return value > 0
+            return value != 0
         return None
 
     def build_open_valve_obj(

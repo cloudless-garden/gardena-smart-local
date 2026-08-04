@@ -10,6 +10,7 @@ from gardena_smart_local_api.devices.gen1 import (
     Gen1Device,
 )
 from gardena_smart_local_api.devices.irrigation import Gen1WaterControl
+from gardena_smart_local_api.messages import IngressMessageList
 
 
 @pytest.mark.asyncio
@@ -76,3 +77,29 @@ async def test_gen1_build_command_obj(water_control):
     assert request.entity.path.object_instance_id == "0"
     assert request.entity.path.resource_name == "command"
     assert request.payload == {"vi": 3}
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("watering_timer", "expected"),
+    [(3597, True), (-3597, True), (0, False)],
+)
+async def test_gen1_is_valve_open_scheduled_watering(
+    water_control, watering_timer, expected
+):
+    event = IngressMessageList.model_validate_json(f"""
+        [
+          {{
+            "entity": {{ "device": "{water_control.id}", "path": "lemonbeat/0" }},
+            "metadata": {{ "sequence": 1, "source": "lemonbeatd" }},
+            "op": "update",
+            "payload": {{
+              "watering_timer_1": {{ "ts": 1774970419, "vi": {watering_timer} }},
+              "_urn": "urn:oma:lwm2m:x:31000"
+            }}
+          }}
+        ]
+        """)
+    water_control.update_data(event.root[0])
+
+    assert water_control.is_valve_open(0) is expected
