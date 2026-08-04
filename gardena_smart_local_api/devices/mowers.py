@@ -2,11 +2,18 @@
 #
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
+import struct
+from typing import Any
+
+from pydantic import BaseModel, model_validator
+
 from ..messages import EgressMessageList
 from ..resources import IpsoPath
 from ._enums import _LowerNameEnum
 from .gen1 import Gen1BatteryMixin, Gen1Device
 from .gen2 import Gen2BatteryMixin, Gen2Device
+
+_POSITION_STRUCT = struct.Struct(">iiIiihBhB")
 
 
 class MowerState(_LowerNameEnum):
@@ -156,8 +163,67 @@ class Gen1Mower1(_Gen1Mower):
         )
 
 
+class Gen1MowerPosition(BaseModel):
+    """Position report of a Gen1Mower2 (with LONA)."""
+
+    gnss_latitude: float
+    gnss_longitude: float
+    gnss_horizontal_accuracy: int
+    real_time_latitude: float
+    real_time_longitude: float
+    real_time_heading: float
+    real_time_is_ready: bool
+    compass_heading: float
+    compass_is_calibrated: bool
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_from_bytes(cls, data: Any) -> Any:
+        """Allow deserialization from the raw 26-byte position payload."""
+        if isinstance(data, bytes):
+            (
+                gnss_latitude,
+                gnss_longitude,
+                gnss_horizontal_accuracy,
+                real_time_latitude,
+                real_time_longitude,
+                real_time_heading,
+                real_time_is_ready,
+                compass_heading,
+                compass_is_calibrated,
+            ) = _POSITION_STRUCT.unpack(data)
+            return {
+                "gnss_latitude": gnss_latitude * 1e-7,
+                "gnss_longitude": gnss_longitude * 1e-7,
+                "gnss_horizontal_accuracy": gnss_horizontal_accuracy,
+                "real_time_latitude": real_time_latitude * 1e-7,
+                "real_time_longitude": real_time_longitude * 1e-7,
+                "real_time_heading": real_time_heading * 0.1,
+                "real_time_is_ready": bool(real_time_is_ready),
+                "compass_heading": compass_heading * 0.1,
+                "compass_is_calibrated": bool(compass_is_calibrated),
+            }
+        return data
+
+
 class Gen1Mower2(_Gen1Mower):
     """Robotic lawn mower with LONA"""
+
+    @property
+    def position(self) -> Gen1MowerPosition | None:
+        value = self.get_value(
+            IpsoPath(
+                object_name="lemonbeat",
+                object_instance_id="0",
+                resource_name="position",
+            )
+        )
+        if isinstance(value, bytes):
+            try:
+                return Gen1MowerPosition.model_validate(value)
+            except (struct.error, ValueError):
+                pass
+        return None
 
     def build_start_mowing_obj(
         self, seconds: int, meters_from_cs: int = 0
@@ -181,6 +247,24 @@ class Gen1Mower2(_Gen1Mower):
                 resource_name="mower_timer_with_distance",
             ),
             data,
+        )
+
+    def build_start_position_reporting_obj(self, seconds: int) -> EgressMessageList:
+        """Start mowing for given duration.
+
+        Args:
+            seconds: Duration in seconds.
+
+        Returns:
+            EgressMessageList ready to be sent to the local GARDENA smart API.
+        """
+        return self.build_write_value_obj(
+            IpsoPath(
+                object_name="lemonbeat",
+                object_instance_id="0",
+                resource_name="position_timer",
+            ),
+            seconds,
         )
 
 
