@@ -13,7 +13,9 @@ from ._enums import _LowerNameEnum
 from .gen1 import Gen1BatteryMixin, Gen1Device
 from .gen2 import Gen2BatteryMixin, Gen2Device
 
-_POSITION_STRUCT = struct.Struct(">iiIiihBhB")
+_POSITION_STRUCT = struct.Struct(">2iI2ih?h?")
+_LAT_LONG_SCALE = 1e-7 # lat and long scale according to ICD
+_HEADING_SCALE = 0.1 # heading scale according to ICD
 
 
 class MowerState(_LowerNameEnum):
@@ -193,14 +195,14 @@ class Gen1MowerPosition(BaseModel):
                 compass_is_calibrated,
             ) = _POSITION_STRUCT.unpack(data)
             return {
-                "gnss_latitude": gnss_latitude * 1e-7,
-                "gnss_longitude": gnss_longitude * 1e-7,
+                "gnss_latitude": gnss_latitude * _LAT_LONG_SCALE,
+                "gnss_longitude": gnss_longitude * _LAT_LONG_SCALE,
                 "gnss_horizontal_accuracy": gnss_horizontal_accuracy,
-                "real_time_latitude": real_time_latitude * 1e-7,
-                "real_time_longitude": real_time_longitude * 1e-7,
-                "real_time_heading": real_time_heading * 0.1,
+                "real_time_latitude": real_time_latitude * _LAT_LONG_SCALE,
+                "real_time_longitude": real_time_longitude * _LAT_LONG_SCALE,
+                "real_time_heading": real_time_heading * _HEADING_SCALE,
                 "real_time_is_ready": bool(real_time_is_ready),
-                "compass_heading": compass_heading * 0.1,
+                "compass_heading": compass_heading * _HEADING_SCALE,
                 "compass_is_calibrated": bool(compass_is_calibrated),
             }
         return data
