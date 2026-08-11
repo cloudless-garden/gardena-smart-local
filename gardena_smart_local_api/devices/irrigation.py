@@ -385,6 +385,13 @@ class Pump(
     def build_start_obj(
         self, duration_seconds: int = DEFAULT_WATERING_DURATION
     ) -> EgressMessageList:
+        # In automatic mode the pump decides for itself based on outlet
+        # pressure and ignores manual start/stop writes, so sending one
+        # would silently do nothing.
+        if self.operating_mode == PumpOperatingMode.AUTOMATIC:
+            raise ValueError(
+                "Cannot manually start/stop the pump while it's in automatic mode"
+            )
         return self.build_write_value_obj(
             IpsoPath(
                 object_name="lemonbeat",
