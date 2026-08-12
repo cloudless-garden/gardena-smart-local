@@ -72,5 +72,42 @@ class Gen2IdentifyMixin:
 
 
 class Gen2Device(Device):
+    # connectivity_monitoring is present in every known Gen2 model schema.
     model_definition: Gen2ModelDefinition = Field()
     service: ClassVar[str] = "lwm2mserver"
+
+    @property
+    def radio_signal_strength(self: _DeviceProtocol) -> int | None:
+        """Signal strength in dBm, from the standard LwM2M connectivity object.
+
+        Also refreshed by build_refresh_rf_link_quality_obj().
+        """
+        value = self.get_value(
+            IpsoPath(
+                object_name="connectivity_monitoring",
+                object_instance_id="0",
+                resource_name="radio_signal_strength",
+            )
+        )
+        return value if isinstance(value, int) else None
+
+    @property
+    def rf_link_quality(self: _DeviceProtocol) -> int | None:
+        value = self.get_value(
+            IpsoPath(
+                object_name="connectivity_monitoring",
+                object_instance_id="0",
+                resource_name="link_quality",
+            )
+        )
+        return value if isinstance(value, int) else None
+
+    def build_refresh_rf_link_quality_obj(self: _DeviceProtocol) -> EgressMessageList:
+        return self.build_execute_obj(
+            IpsoPath(
+                object_name="sg_common",
+                object_instance_id="0",
+                resource_name="measure_rf_link",
+            ),
+            None,
+        )

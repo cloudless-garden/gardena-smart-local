@@ -15,7 +15,12 @@ from .gen1 import (
     Gen1IdentifyMixin,
     _Gen1DeviceProtocol,
 )
-from .gen2 import Gen2BatteryMixin, Gen2Device, Gen2IdentifyMixin, Gen2TemperatureMixin
+from .gen2 import (
+    Gen2BatteryMixin,
+    Gen2Device,
+    Gen2IdentifyMixin,
+    Gen2TemperatureMixin,
+)
 
 # Used to indicate that the action was initiated through WebSocket API.
 COMMAND_SOURCE = "18"
