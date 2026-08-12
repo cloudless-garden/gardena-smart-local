@@ -97,6 +97,8 @@ async def info(app: ExampleApp) -> int:
         out += f"\n  Battery:         {battery_level}%"
     if (rf_link_quality := getattr(device, "rf_link_quality", None)) is not None:
         out += f"\n  RF link quality: {rf_link_quality}%"
+    if (signal_strength := getattr(device, "radio_signal_strength", None)) is not None:
+        out += f"\n  Radio signal strength: {signal_strength} dBm"
     print(out)
     return 0
 
