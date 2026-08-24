@@ -521,6 +521,11 @@ class Pump(
 
     @property
     def flow_rate(self) -> int | None:
+        # The device can report values from 100 to 13615. Therefore, even when the pump
+        # is not running, a value of 100 gets reported.
+        # The following condition avoids passing on obviously wrong values.
+        if self.is_running is False:
+            return 0
         value = self.get_value(
             IpsoPath(
                 object_name="lemonbeat",
