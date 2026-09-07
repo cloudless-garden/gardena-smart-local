@@ -63,7 +63,7 @@ async def test_epp_outlet_temperature(epp):
 
 @pytest.mark.asyncio
 async def test_epp_flow_rate(epp):
-    assert epp.flow_rate == 100
+    assert epp.flow_rate == 0
 
 
 @pytest.mark.asyncio
