@@ -14,6 +14,10 @@ path = [
   "tests/data/unknown_device.json",
   "tests/data/update_event.json",
   "tests/data/water_control.json",
+  "tests/data/mower_gen1_lona.json",
+  "tests/data/mower_gen1_lona_position_update_event.json",
+  "tests/data/mower_gen2.json",
+  "tests/data/mower_gen2_position_update_event.json",
 ]
 SPDX-FileCopyrightText = "2026 GARDENA GmbH"
 SPDX-License-Identifier = "LGPL-3.0-or-later"
