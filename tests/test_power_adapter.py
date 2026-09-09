@@ -6,6 +6,8 @@ import pytest
 
 from gardena_smart_local_api.devices.gen1 import Gen1Device
 from gardena_smart_local_api.devices.power import PowerAdapter
+from gardena_smart_local_api.messages import Entity, Event
+from gardena_smart_local_api.resources import IpsoPath
 
 
 @pytest.mark.asyncio
@@ -53,6 +55,21 @@ async def test_power_adapter_update_event(power_adapter, power_adapter_update_ev
     power_adapter.update_data(event)
     assert power_adapter.power_timer == 3597
     assert power_adapter.is_output_enabled is True
+
+
+@pytest.mark.asyncio
+async def test_power_adapter_power_timer_missing_returns_none(power_adapter):
+    power_adapter.update_data(
+        Event(
+            entity=Entity(
+                path=IpsoPath(object_name="lemonbeat", object_instance_id="0"),
+                device=power_adapter.id,
+            ),
+            op="delete",
+        )
+    )
+    assert power_adapter.power_timer is None
+    assert power_adapter.is_output_enabled is None
 
 
 @pytest.mark.asyncio
